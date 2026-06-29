@@ -37,10 +37,10 @@ The ISA supports 16 operations out of which, first 12 are ALU operations and las
 |1001| SLT | Rd ← (Rd < Rs)|
 |1010| SGT | Rd ← (Rd > Rs)|
 |1011| INC | Rd ← Rd + 1 |
-|1100| LOAD | Read data from memory |
-|1101| STORE | Write data into memory |
-|1110| JUMP | Jumps to target address |
-|1111| HALT | Stops CPU execution|
+|1100| LOAD | Rd ← MEM[Addr] |
+|1101| STORE | MEM[Addr] ← Rd |
+|1110| JUMP | PC ← Jump_Addr|
+|1111| HALT | CPU execution stops |
 
 
 ## 7. Individiual Module Design 
@@ -67,6 +67,22 @@ It acts as the CPU's internal memory. It stores the operands required by the ALU
 - Supports two simultaneous combinational reads (operand A and operand B) to feed the ALU in the same cycle.
 
 ### C. Main Memory
+#### Purpose 
+The Main Memory module serves two different purposes in the CPU:
+
+  **1.** Stores the program instructions. <br>
+  **2.** Stores data values used by LOAD and STORE instructions.
+  
+Since instructions and data share the same memory, the CPU follows a Von Neumann architecture.
+
+#### Operations
+- The memory contains both instructions and data.
+- During the FETCH stage, the Program Counter provides the address.
+- The memory outputs a 12-bit instruction which is loaded into the Instruction Register.
+- During LOAD and STORE instructions, the address field of the instruction is used instead.
+- STORE writes register data into memory.
+- LOAD reads data from memory and sends it back to the register file.
+
 
 ### D. Instruction Register (IR)
 #### Purpose
@@ -84,7 +100,10 @@ IR stores the fetched instruction temporarily so that it can be decoded and exec
 It is the brain of the CPU. All the logic decisions are taken in this section. The CPU follows a multi-cycle execution model:
 
 `FETCH` → `DECODE` → `EXECUTE` → `WRITEBACK` → `FETCH`
+
 #### Operation
+The Control Unit coordinates the entire datapath by generating the control signals required during each stage of execution.
+
 **1. FETCH State**
 - Loads the next instruction from the memory into the Instruction Register.
 - Activates the `ir_load` signal.
@@ -116,3 +135,138 @@ Similar to `EXECUTE` state, the `opcode` determines the operation:
 - Initially, the CPU executed the entire Fetch-Decode-Execute cycle within a single clock cycle. This made the FSM unnecessary. In order to incorporate the multi-cycle functionality to make the CPU practical, `FETCH`, `DECODE`, `EXECUTE` and `WRITEBACK` states were added.
 - The control outputs depend on both the current FSM state and the instruction opcode. This allows different instructions to generate different control signals while still following the same four-stage execution cycle.
 - Since the CPU reuses the previously designed 4-bit ALU, opcodes `0000–1011` are reserved for ALU operations, allowing the opcode itself to be directly used as the `alu_op` signal.
+
+### F. CPU's ALU
+#### Purpose
+The ALU perfroms the combinational operations of the CPU. 
+
+#### Operation
+- The 4-bit ALU operations are self-explanatory as they follow the ISA provided in section 5.
+- It also generates the Carry, Zero, Negative and Overflow flags.
+- It is a hierarchical design, where `CPU_ALU` handles top-level control and and additional CPU operations, `ALU_4_bit` instantiates the `ALU_1_bit` cells.
+- Shift, comparison, and increment operations are implemented directly inside the `CPU_ALU` module.
+
+#### Design Decisions
+- The hierarchical design was chosen to reuse the previous built [4-bit ALU](https://github.com/theYash856/4_bit_ALU).
+- In order to maintain the originality of the exisitng project, a new top module `CPU_ALU` was used instead of the previous project's `ALU_TOP`.
+- Opcode translation was performed to match the CPU instruction opcodes with the existing ALU opcodes.
+- An `alu_enable` signal is used to ensure that the ALU remains active only during the EXECUTE and WRITEBACK stages of ALU instructions.
+
+### G. CPU TOP
+
+#### Purpose 
+This is the module where the individual modules come together to make a functional processor. 
+
+#### Operation
+- Instantiates all six modules and connects them via internal wires.
+- A memory address mux selects between `pc_out` during FETCH and `IR[3:0]` during LOAD/STORE, allowing shared memory access across different stages.
+- A writeback mux selects between ALU result and memory data based on `mem_to_reg`, routing the correct data to the Register File.
+
+## 8. Sample Program
+As the CPU at this stage can't directly take inputs from the user, a preloaded sample program is is stored in the Main Memory to demonstrate the execution of different instructions.
+
+| Address | Contents       | Meaning               |
+| :------: | :--------------: |:---------------------: |
+|  0 | LOAD R0,11     | Load first operand into R0   |
+|  1 | LOAD R1,12     | Load second operand into R1  |
+|  2 | SUB R0,R1      | Subtract R1 from R0 and store the result in R0   |
+|  3 | INC R0         | Increment the result stored in R0     |
+|  4 | STORE R0,14    | Store the value of R0 into memory location 14   |
+|  5 | JUMP 7         | Skip next instruction |
+|  6 | ADD R0,R1      | Should not execute    |
+|  7 | HALT           | Stop CPU              |
+|  11 | 0000_0000_0111 | Data value 7          |
+|  12 | 0000_0000_0011 | Data value 3          |
+|  14 | 0000_0000_0000 | Result location       |
+
+## 9. Execution Flow
+The execution of the sample program is shown below.
+
+### Step 1: LOAD R0,11
+
+The value stored at memory location 11 is loaded into register R0.
+
+```text
+R0 ← Memory[11]
+
+R0 = 0111 (7)
+R1 = 0
+```
+---
+
+### Step 2: LOAD R1,12
+
+The value stored at memory location 12 is loaded into register R1.
+
+```text
+R1 ← Memory[12]
+
+R0 = 0111 (7)
+R1 = 0011 (3)
+```
+---
+
+### Step 3: SUB R0,R1
+
+The ALU subtracts the contents of R1 from R0 and stores the result back into R0.
+
+```text
+R0 = 0111
+R1 = 0011
+
+R0 ← R0 - R1
+R0 ← 0111 - 0011
+
+R0 = 0100 (4)
+```
+---
+
+### Step 4: INC R0
+
+The value stored in R0 is incremented by one.
+
+```text
+R0 = 0100
+R0 ← R0 + 0001
+
+R0 = 0101 (5)
+```
+---
+
+### Step 5: STORE R0,14
+
+The result stored in R0 is written into memory location 14.
+
+```text
+Memory[14] ← R0
+
+Memory[14] = 0101 (5)
+```
+---
+
+### Step 6: JUMP 7
+
+The Program Counter is updated to address 7, causing the next instruction to be skipped.
+
+```text
+PC = 5
+PC = 7
+```
+---
+
+### Step 7: HALT
+
+The HALT instruction stops further execution of the processor.
+
+```text
+HALT = 1
+
+CPU execution terminated.
+```
+---
+
+### Final Result
+
+```text
+Memory[14] = 0000_0000_0101 (5)
+```
