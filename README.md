@@ -1,16 +1,9 @@
 # 4-bit Multi-Cycle CPU
 
-## 1. Motivation 
-In order to understand the theory of combinational and sequential circuits practically, I previously built the [4-bit ALU](https://github.com/theYash856/4_bit_ALU) and [4-Floor Elevator Controller](https://github.com/theYash856/4_Floor_Elevator_Controller) projects.
-
-Having completed the standard Digital System Design (DSD) concepts, I wanted to move beyond individual modules and understand how digital components work together to form a complete processor. This lead to the development of 4-bit CPU as the culminating project.
-
-The objective is not just to implement a CPU in Verilog, but to understand the fundamentals of Computer Organisation & Architecture (COA) — memory organisation, register types, control logic, and the fetch-decode-execute cycle — through practical implementation.
-
-## 2. Project Overview
+## 1. Project Overview
 This project presents the design and implementation of a **4-bit multi-cycle CPU** using Verilog HDL. The CPU is based on the **Von Neumann architecture** and supports a custom **16-instruction ISA**. Each instruction is executed over **multiple clock cycles** through the FETCH, DECODE, EXECUTE, and WRITEBACK stages while supporting arithmetic, logical, memory, and control operations.
 
-## 3. Project Structure
+## 2. Project Structure
 
 ```text
 4_bit_Multi_Cycle_CPU/
@@ -37,18 +30,22 @@ This project presents the design and implementation of a **4-bit multi-cycle CPU
 │   └── CPU_ALU_tb.v
 │
 ├── docs/
-│   ├── CPU_Blueprint.png
-│   ├── RTL_Schematic.png
-│   ├── Waveform.png
-│   └── Console_Output.png
+│   ├── blueprint.png
+│   ├── CPU_full.png
+│   ├── cu_zoom.png
+│   ├── waveform.png
+│   ├── console1.png
+│   └── console2.png
 │
 ├── LICENSE
-└── README.md
+├── README.md
+└── Technical_Design.md
 ```
 > [!NOTE]
 > 1. `CPU_TOP_tb.v` is the primary testbench used to verify the complete processor. The individual module testbenches are provided separately for independent module verification.
 > 2. Main Memory doesn't have its own testbench because it only stores the preloaded program which is self-explanatory.
-## 4. CPU Specifications
+
+## 3. CPU Specifications
 
 <div align="center">
  
@@ -64,7 +61,7 @@ This project presents the design and implementation of a **4-bit multi-cycle CPU
 
 </div>
 
-## 5. Instruction Set Architecture (ISA)
+## 4. Instruction Set Architecture (ISA)
 The ISA supports 16 operations out of which, first 12 are ALU operations and last 4 are CPU operations. The instruction descriptions are written using Register Transfer Language (RTL). 
 
 **Rd** - Destination Register <br>
@@ -105,7 +102,7 @@ The ISA supports 16 operations out of which, first 12 are ALU operations and las
 </table>
 </div>
 
-## 6. CPU Blueprint
+## 5. CPU Blueprint
 
 This section presents the design planning done before implementation. The instruction format, ISA organization, control path, datapath, and overall CPU block diagram were defined to establish the operation and data flow of the processor.
 
@@ -119,126 +116,11 @@ This section presents the design planning done before implementation. The instru
 
 The Program Counter provides the memory address during instruction FETCH, which is accessed from the Main Memory and loaded into the Instruction Register. The Control Unit decodes the instruction and generates the required control signals. Depending on the instruction, data moves between the Register File, ALU, and Main Memory, while the WRITEBACK stage writes the selected result back into the Register File.
 
-## 7. Individual Module Design
-Each module was independently designed, implemented, and verified through simulation before integration into the top-level CPU. The following sections describe the purpose, operation, and design decisions behind each module.
+## 6. Technical Documentation
+> [!NOTE]
+> The detailed architectural and implementation aspects of the processor, including individual module design, control unit operation, debugging experience, limitations, and future improvements, are documented separately in [Technical_Design.md](Technical_Design.md).
 
-### 7.1 Program Counter (PC)
-#### Purpose
-It acts as the CPU's position tracker. It stores the address of the next instruction to be executed. 
-
-#### Operation
-- It resets to 0 if `rst` is 1.
-- Increments by 1 on every clock cycle.
-- Loads the `jump_address` during `jump` signal.
-- Provides the current address to the memory.
-
-### 7.2 Register File 
-#### Purpose 
-It acts as the CPU's internal memory. It stores the operands required by the ALU as well as the computed results.
-
-#### Operation
-- Contains 4 General Purpose Registers (R0-R3).
-- The registers can act as both source and destination registers depending on the instruction being executed.
-- The `write_enable` signal writes the data only when it is 1, otherwise the previous value is retained.
-- If `rst` is 1, all the registers are cleared to `0000`.
-- Supports two simultaneous combinational reads (operand A and operand B) to feed the ALU in the same cycle.
-
-### 7.3 Main Memory
-#### Purpose 
-The Main Memory module serves two different purposes in the CPU:
-
-  **1.** Stores the program instructions. <br>
-  **2.** Stores data values used by LOAD and STORE instructions.
-  
-Since instructions and data share the same memory, the CPU follows a Von Neumann architecture.
-
-#### Operations
-- The memory contains both instructions and data.
-- During the FETCH stage, the Program Counter provides the address.
-- The memory outputs a 12-bit instruction which is loaded into the Instruction Register.
-- During LOAD and STORE instructions, the address field of the instruction is used instead.
-- STORE writes register data into memory.
-- LOAD reads data from memory and sends it back to the register file.
-
-
-### 7.4 Instruction Register (IR)
-#### Purpose
-
-IR stores the fetched instruction temporarily so that it can be decoded and executed during subsequent clock cycles. Without the IR, the instruction would be lost once the Program Counter advances to the next address.
-
-#### Operation
-
-- The instruction from memory is loaded into the IR during the `FETCH` stage.
-- The stored instruction is then used by the Control Unit and datapath during `DECODE` and `EXECUTE` stages.
-- The instruction remains unchanged until a new instruction is fetched or the register is reset.
-
-### 7.5 Control Unit (CU)
-#### Purpose
-It is the brain of the CPU and is responsible for all control decisions. The CPU follows a multi-cycle execution model:
-
-`FETCH` → `DECODE` → `EXECUTE` → `WRITEBACK` → `FETCH`
-
-#### Operation
-The Control Unit coordinates the entire datapath by generating the control signals required during each stage of execution.
-
-**1. FETCH State**
-- Loads the next instruction from the memory into the Instruction Register.
-- Activates the `ir_load` signal.
-
-**2. DECODE State**
-- Decodes the instruction opcode and instruction fields.
-- Determines the type of instruction being executed.
-- No control signals are triggered as the decoding is performed internally.
-
-**3. EXECUTE State**
-The instruction performed depends on the `opcode`:
-
-- ALU instructions enable the ALU and pass the `opcode` as `alu_op`.
-- LOAD instructions activate the `mem_read` signal to read from memory.
-- JUMP instructions activate the `jump_enable` signal.
-
-**4. WRITEBACK State**
-Similar to the `EXECUTE` state, the `opcode` determines the operation:
-
-- ALU instructions write the ALU result back to the register file via `reg_write`, with `alu_enable` held high to keep the result valid.
-- LOAD instructions write memory data back to the destination register using `reg_write` and `mem_to_reg`, with `mem_read` held high to keep the fetched data valid.
-- STORE instructions write to memory here via `mem_write`.
-- The Program Counter is updated to fetch the next instruction after the cycle completes.
-- HALT instructions assert `halt` and prevent further PC updates, the FSM remains locked in `WRITEBACK` until `rst` is applied.
-
-#### Design Decisions
-- Initially, the CPU executed the entire Fetch-Decode-Execute cycle within a single clock cycle. This made the FSM unnecessary. In order to incorporate the multi-cycle functionality to make the CPU practical, `FETCH`, `DECODE`, `EXECUTE` and `WRITEBACK` states were added.
-- The control outputs depend on both the current FSM state and the instruction opcode. This allows different instructions to generate different control signals while still following the same four-stage execution cycle.
-- Signals such as `alu_enable`, `mem_read`, and `mem_write` are held active through WRITEBACK rather than only EXECUTE, since downstream modules (Register File, Memory) require valid data during the writeback cycle.
-- Since the CPU reuses the previously designed 4-bit ALU, opcodes `0000–1011` are reserved for ALU operations, allowing the opcode itself to be directly used as the `alu_op` signal.
-
-### 7.6 CPU's ALU
-#### Purpose
-The ALU perfroms the combinational operations of the CPU. 
-
-#### Operation
-- The 4-bit ALU operations are self-explanatory as they follow the ISA provided in section 5.
-- It also generates the Carry, Zero, Negative and Overflow flags.
-- It is a hierarchical design, where `CPU_ALU` handles top-level control and additional CPU operations, `ALU_4_bit` instantiates the `ALU_1_bit` cells.
-- Shift, comparison, and increment operations are implemented directly inside the `CPU_ALU` module.
-
-#### Design Decisions
-- The hierarchical design was chosen to reuse the previously built [4-bit ALU](https://github.com/theYash856/4_bit_ALU).
-- In order to maintain the originality of the exisitng project, a new top module `CPU_ALU` was used instead of the previous project's `ALU_TOP`.
-- Opcode translation was performed to match the CPU instruction opcodes with the existing ALU opcodes.
-- An `alu_enable` signal is used to ensure that the ALU remains active only during the EXECUTE and WRITEBACK stages of ALU instructions.
-
-### 7.7 CPU TOP
-
-#### Purpose 
-This is the module where the individual modules come together to make a functional processor. 
-
-#### Operation
-- Instantiates all six modules and connects them via internal wires.
-- A memory address mux selects between `pc_out` during FETCH and `IR[3:0]` during LOAD/STORE, allowing shared memory access across different stages.
-- A writeback mux selects between ALU result and memory data based on `mem_to_reg`, routing the correct data to the Register File.
-
-## 8. Sample Program
+## 7. Sample Program
 As the CPU at this stage cannot directly take inputs from the user, a preloaded sample program is stored in the Main Memory to demonstrate the execution of different instructions.
 
 <div align="center">
@@ -259,7 +141,7 @@ As the CPU at this stage cannot directly take inputs from the user, a preloaded 
 
 </div>
 
-## 9. Execution Flow
+## 8. Execution Flow
 The execution of the sample program is shown below.
 
 ### Step 1: LOAD R0,11
@@ -351,24 +233,24 @@ CPU execution terminated.
 Memory[14] = 0000_0000_0101 (5)
 ```
 
-## 10. Simulation Results & Verification
-### 10.1 RTL Schematic
+## 9. Simulation Results & Verification
+### 9.1 RTL Schematic
 ![Cute Monster](docs/CPU_full.png)
 
 **Zoomed Control Unit Section**
 
 ![Zoomed CU](docs/cu_zoom.png)
 
-### 10.2 Waveform Analysis
+### 9.2 Waveform Analysis
 ![Waveform](docs/waveform.png)
 
-### 10.3 Console Output
+### 9.3 Console Output
 <p align="center">
   <img src="docs/console1.png" width="49%">
   <img src="docs/console2.png" width="49%">
 </p>
 
-## 11. How to Run/Simulation Guide
+## 10. How to Run/Simulation Guide
 ### Prerequisites
 - Xilinx Vivado (2017.4 or later), or
 - Any Verilog-compatible online simulator.
@@ -385,33 +267,11 @@ Memory[14] = 0000_0000_0101 (5)
 > [!NOTE]
 > All testbenches generate VCD waveform files using `$dumpfile` and `$dumpvars`, allowing the design to be simulated on online EDA platforms and viewed using external waveform viewers.
 
-## 12 Project Insights
-### 12.1 Key Learnings
-- Developed basic understanding of Computer Architecture, particularly the datapath and control path of CPU.
+## 11. Key Learnings
+- Developed a practical understanding of Computer Architecture, particularly the datapath and control path of CPU.
 - Used a multi-cycle FSM design to clearly observe the working of each state and its corresponding control signals.
 - Understood the working of shared instruction and data memory in the Von Neumann Architecture.
-- Learned how previously designed hardware modules (4-bit ALU) can be reused and integrated into larger systems.
+- Gained experience in integrating previously developed hardware modules, such as the 4-bit ALU, into a larger processor system.
+- Developed practical debugging skills while resolving datapath and control logic issues during system integration.
 
-### 12.2 Debugging Experience
-- Discovered that the LOAD instruction was initially *treating the immediate field as data rather than a memory address*. This issue was resolved by introducing a memory address multiplexer to select between the Program Counter and the instruction address field.
 
-- Identified *a control logic issue* where the HALT instruction was not stopping the processor correctly. The problem was traced to the WRITEBACK stage logic and was resolved by properly asserting the halt signal during the final state.
-
-## 13. Limitations & Future Improvements
-### 13.1 Limitations 
-- The current model uses 4-bit datapath, which limits all values (registers, ALU results, memory data) to the range 0–15.
-- Unified memory limits data storage to the lower 4 bits of the 12-bit memory word.
-- Status flags are generated but are not yet utilized for branching or decision-making.
-- The design has only been verified through waveform simulation.
-
-### 13.2 Future Improvements
-- Extend the datapath width to 8 bits.
-- Implement multiplication and division operations so that the ALU supports all basic arithmetic operations.
-- Separate the Instruction Memory and Data Memory by adopting Harvard Architecture.
-- Add flag-based conditional branching instructions.
-- Implement the processor on FPGA hardware.
-
-## 14. Tools & Concepts Used
-- **Language:** Verilog HDL
-- **EDA Tools:** Xilinx Vivado (Simulation and RTL analysis). The design is also compatible with online EDA platforms.
-- **Concepts Used:** Basic Computer Organisation & Architecture (COA), multi-cycle FSM design, datapath and control path, and hierarchical design.
