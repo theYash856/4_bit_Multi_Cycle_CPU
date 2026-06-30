@@ -160,3 +160,6 @@ Some design issues were encountered during module integration and system-level t
 - **Language:** Verilog HDL
 - **EDA Tools:** Xilinx Vivado (Simulation and RTL analysis). The design is also compatible with online EDA platforms.
 - **Concepts Used:** Basic Computer Organisation & Architecture (COA), multi-cycle FSM design, datapath and control path, and hierarchical design.
+
+> [!NOTE]
+> This document focuses on the architectural and implementation details of the processor. For the project overview, ISA summary, sample program, execution flow, simulation results, and simulation guide, refer to the [README](README.md).
