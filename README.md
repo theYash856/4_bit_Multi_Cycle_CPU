@@ -49,6 +49,8 @@ This project presents the design and implementation of a **4-bit multi-cycle CPU
 > 2. Main Memory doesn't have its own testbench because it only stores the preloaded program which is self-explanatory.
 ## 4. CPU Specifications
 
+<div align="center">
+ 
 | Parameter | Specification |
 |:----------:|:-----------:|
 | Architecture | Von Neumann Architecture |
@@ -59,36 +61,60 @@ This project presents the design and implementation of a **4-bit multi-cycle CPU
 | Memory Size | 16 x 12-bit |
 | Program Counter Width | 4 bits |
 
+</div>
+
 ## 5. Instruction Set Architecture (ISA)
 The ISA supports 16 operations out of which, first 12 are ALU operations and last 4 are CPU operations. The instruction descriptions are written using Register Transfer Language (RTL).
 **Rd** - Destination Register
 **Rs** - Source Register
+
+<div align="center">
+<table>
+<tr>
+<td valign="top">
+
 | Opcode | Operation | Description |
-|:-------:|:---------:|:----------:|
-| 0000| AND | Rd ← Rd AND Rs | 
-| 0001| OR | Rd ← Rd OR Rs |
+|:---:|:---:|:---:|
+| 0000 | AND | Rd ← Rd AND Rs |
+| 0001 | OR | Rd ← Rd OR Rs |
 | 0010 | NOT | Rd ← ~Rd |
 | 0011 | XOR | Rd ← Rd XOR Rs |
-| 0100| ADD | Rd ← Rd + Rs |
-| 0101| SUB | Rd ← Rd - Rs |
-| 0110| SLL | Rd ← Rd << 1|
-| 0111| SRL | Rd ← Rd >> 1|
-| 1000| SEQ | Rd ← (Rd == Rs)|
-|1001| SLT | Rd ← (Rd < Rs)|
-|1010| SGT | Rd ← (Rd > Rs)|
-|1011| INC | Rd ← Rd + 1 |
-|1100| LOAD | Rd ← MEM[Addr] |
-|1101| STORE | MEM[Addr] ← Rd |
-|1110| JUMP | PC ← Jump_Addr|
-|1111| HALT | CPU execution stops |
+| 0100 | ADD | Rd ← Rd + Rs |
+| 0101 | SUB | Rd ← Rd - Rs |
+| 0110 | SLL | Rd ← Rd << 1 |
+| 0111 | SRL | Rd ← Rd >> 1 |
+
+</td>
+<td valign="top">
+
+| Opcode | Operation | Description |
+|:---:|:---:|:---:|
+| 1000 | SEQ | Rd ← (Rd == Rs) |
+| 1001 | SLT | Rd ← (Rd < Rs) |
+| 1010 | SGT | Rd ← (Rd > Rs) |
+| 1011 | INC | Rd ← Rd + 1 |
+| 1100 | LOAD | Rd ← Memory[Address] |
+| 1101 | STORE | Memory[Address] ← Rd |
+| 1110 | JUMP | PC ← Jump_Address |
+| 1111 | HALT | CPU execution stops |
+
+</td>
+</tr>
+</table>
+</div>
 
 ## 6. CPU Design Blueprint
 
 This section presents the design planning done before implementation. The instruction format, ISA organization, control path, datapath, and overall CPU block diagram were defined to establish the operation and data flow of the processor.
 
-![CPU Design Blueprint](doc/blueprint.png)
+<div align="center">
+ 
+![CPU Design Blueprint](docs/blueprint.png)
 
-#### CPU working principle
+</div>
+
+***CPU Working Principle***
+
 The Program Counter provides the memory address during instruction FETCH, which is accessed from the Main Memory and loaded into the Instruction Register. The Control Unit decodes the instruction and generates the required control signals. Depending on the instruction, data moves between the Register File, ALU, and Main Memory, while the WRITEBACK stage writes the selected result back into the Register File.
 
 ## 7. Individual Module Design
@@ -214,6 +240,8 @@ This is the module where the individual modules come together to make a function
 ## 8. Sample Program
 As the CPU at this stage cannot directly take inputs from the user, a preloaded sample program is stored in the Main Memory to demonstrate the execution of different instructions.
 
+<div align="center">
+
 | Address | Contents       | Meaning               |
 | :------: | :--------------: |:---------------------: |
 |  0 | LOAD R0,11     | Load first operand into R0   |
@@ -227,6 +255,8 @@ As the CPU at this stage cannot directly take inputs from the user, a preloaded 
 |  11 | 0000_0000_0111 | Data value 7          |
 |  12 | 0000_0000_0011 | Data value 3          |
 |  14 | 0000_0000_0000 | Result location       |
+
+</div>
 
 ## 9. Execution Flow
 The execution of the sample program is shown below.
@@ -319,6 +349,24 @@ CPU execution terminated.
 ```text
 Memory[14] = 0000_0000_0101 (5)
 ```
+
+## 10. Simulation Results & Verification
+### 10.1 RTL Schematic
+![Cute Monster](docs/CPU_full.png)
+
+**Zoomed Control Unit Section**
+
+![Zoomed CU](docs/cu_zoom.png)
+
+### 10.2 Waveform Analysis
+![Waveform](docs/waveform.png)
+
+### 10.3 Console Output
+<p align="center">
+  <img src="docs/console1.png" width="49%">
+  <img src="docs/console2.png" width="49%">
+</p>
+
 ## 11. How to Run/Simulation Guide
 ### Prerequisites
 - Xilinx Vivado (2017.4 or later), or
