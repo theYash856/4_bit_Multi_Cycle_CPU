@@ -1,11 +1,11 @@
 # 4-bit Multi-Cycle CPU
 
 ## 1. Motivation 
-In order to understand the theory of combinational and sequential circuits practically, I previously built the [4-bit ALU](https://github.com/theYash856/4_bit_ALU) and [4-Floor Elevator Controller](https://github.com/theYash856/4_Floor_Elevator_Controller) projects respectively.
+In order to understand the theory of combinational and sequential circuits practically, I previously built the [4-bit ALU](https://github.com/theYash856/4_bit_ALU) and [4-Floor Elevator Controller](https://github.com/theYash856/4_Floor_Elevator_Controller) projects.
 
-Having completed the standard Digital System Design (DSD) concepts, I wanted to move beyond individual modules and understand how different digital components work together to form a complete processor. This led to the development of a 4-bit CPU as the culminating project.
+Having completed the standard Digital System Design (DSD) concepts, I wanted to move beyond individual modules and understand how digital components work together to form a complete processor. This lead to the development of 4-bit CPU as the culminating project.
 
-The objective of this project is not just to implement a CPU in Verilog, but also to understand the fundamentals of Computer Organisation & Architecture (COA), like memory organisation, different types of registers and their functions, control logic and the fetch-decode-execute cycle through practical implementation.
+The objective is not just to implement a CPU in Verilog, but to understand the fundamentals of Computer Organisation & Architecture (COA) — memory organisation, register types, control logic, and the fetch-decode-execute cycle — through practical implementation.
 
 ## 2. Project Overview
 This project presents the design and implementation of a **4-bit multi-cycle CPU** using Verilog HDL. The CPU is based on the **Von Neumann architecture** and supports a custom **16-instruction ISA**. Each instruction is executed over **multiple clock cycles** through the FETCH, DECODE, EXECUTE, and WRITEBACK stages while supporting arithmetic, logical, memory, and control operations.
@@ -36,15 +36,16 @@ This project presents the design and implementation of a **4-bit multi-cycle CPU
 │   ├── Control_Unit_tb.v
 │   └── CPU_ALU_tb.v
 │
-├── screenshots/
+├── docs/
 │   ├── CPU_Blueprint.png
 │   ├── RTL_Schematic.png
 │   ├── Waveform.png
 │   └── Console_Output.png
 │
+├── LICENSE
 └── README.md
 ```
-> **Note:**
+> [!NOTE]
 > 1. `CPU_TOP_tb.v` is the primary testbench used to verify the complete processor. The individual module testbenches are provided separately for independent module verification.
 > 2. Main Memory doesn't have its own testbench because it only stores the preloaded program which is self-explanatory.
 ## 4. CPU Specifications
@@ -64,8 +65,9 @@ This project presents the design and implementation of a **4-bit multi-cycle CPU
 </div>
 
 ## 5. Instruction Set Architecture (ISA)
-The ISA supports 16 operations out of which, first 12 are ALU operations and last 4 are CPU operations. The instruction descriptions are written using Register Transfer Language (RTL).
-**Rd** - Destination Register
+The ISA supports 16 operations out of which, first 12 are ALU operations and last 4 are CPU operations. The instruction descriptions are written using Register Transfer Language (RTL). 
+
+**Rd** - Destination Register <br>
 **Rs** - Source Register
 
 <div align="center">
@@ -103,7 +105,7 @@ The ISA supports 16 operations out of which, first 12 are ALU operations and las
 </table>
 </div>
 
-## 6. CPU Design Blueprint
+## 6. CPU Blueprint
 
 This section presents the design planning done before implementation. The instruction format, ISA organization, control path, datapath, and overall CPU block diagram were defined to establish the operation and data flow of the processor.
 
@@ -172,7 +174,7 @@ IR stores the fetched instruction temporarily so that it can be decoded and exec
 
 ### 7.5 Control Unit (CU)
 #### Purpose
-It is the brain of the CPU. All the logic decisions are taken in this section. The CPU follows a multi-cycle execution model:
+It is the brain of the CPU and is responsible for all control decisions. The CPU follows a multi-cycle execution model:
 
 `FETCH` → `DECODE` → `EXECUTE` → `WRITEBACK` → `FETCH`
 
@@ -189,26 +191,25 @@ The Control Unit coordinates the entire datapath by generating the control signa
 - No control signals are triggered as the decoding is performed internally.
 
 **3. EXECUTE State**
-
 The instruction performed depends on the `opcode`:
+
 - ALU instructions enable the ALU and pass the `opcode` as `alu_op`.
 - LOAD instructions activate the `mem_read` signal to read from memory.
-- STORE instructions activate the `mem_write` signal to write into the memory.
 - JUMP instructions activate the `jump_enable` signal.
-- HALT instructions generate the `halt` signal which pauses the execution.
 
 **4. WRITEBACK State**
+Similar to the `EXECUTE` state, the `opcode` determines the operation:
 
-Similar to `EXECUTE` state, the `opcode` determines the operation:
-- ALU instructions write the ALU result back to the register file via `reg_write` signal.
-- LOAD instructions write the memory data back to the destination register using `reg_write` and `mem_to_reg`.
+- ALU instructions write the ALU result back to the register file via `reg_write`, with `alu_enable` held high to keep the result valid.
+- LOAD instructions write memory data back to the destination register using `reg_write` and `mem_to_reg`, with `mem_read` held high to keep the fetched data valid.
+- STORE instructions write to memory here via `mem_write`.
 - The Program Counter is updated to fetch the next instruction after the cycle completes.
-- HALT instructions prevent further PC updates.
-- STORE and JUMP instructions are left idle as their functions are completed in `EXECUTE` state.
+- HALT instructions assert `halt` and prevent further PC updates, the FSM remains locked in `WRITEBACK` until `rst` is applied.
 
 #### Design Decisions
 - Initially, the CPU executed the entire Fetch-Decode-Execute cycle within a single clock cycle. This made the FSM unnecessary. In order to incorporate the multi-cycle functionality to make the CPU practical, `FETCH`, `DECODE`, `EXECUTE` and `WRITEBACK` states were added.
 - The control outputs depend on both the current FSM state and the instruction opcode. This allows different instructions to generate different control signals while still following the same four-stage execution cycle.
+- Signals such as `alu_enable`, `mem_read`, and `mem_write` are held active through WRITEBACK rather than only EXECUTE, since downstream modules (Register File, Memory) require valid data during the writeback cycle.
 - Since the CPU reuses the previously designed 4-bit ALU, opcodes `0000–1011` are reserved for ALU operations, allowing the opcode itself to be directly used as the `alu_op` signal.
 
 ### 7.6 CPU's ALU
@@ -381,6 +382,8 @@ Memory[14] = 0000_0000_0101 (5)
 6. Under `RTL Analysis`, click on `Open Elaborated Design` → `Schematic` to view the RTL schematic.
 7. Under `Simulation`, select `Run Behavioral Simulation` to observe the waveform.
 8. Check console output for step-by-step execution trace.
+> [!NOTE]
+> All testbenches generate VCD waveform files using `$dumpfile` and `$dumpvars`, allowing the design to be simulated on online EDA platforms and viewed using external waveform viewers.
 
 ## 12 Project Insights
 ### 12.1 Key Learnings
