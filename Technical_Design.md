@@ -3,15 +3,15 @@
 ## 1. Motivation 
 In order to understand the theory of combinational and sequential circuits practically, I previously built the [4-bit ALU](https://github.com/theYash856/4_bit_ALU) and [4-Floor Elevator Controller](https://github.com/theYash856/4_Floor_Elevator_Controller) projects.
 
-Having completed the standard Digital System Design (DSD) concepts, I wanted to move beyond individual modules and understand how digital components work together to form a complete processor. This lead to the development of 4-bit CPU as the culminating project.
+Having completed the standard Digital System Design (DSD) concepts, I wanted to move beyond individual modules and understand how digital components work together to form a complete processor. This led to the development of 4-bit CPU as **the culminating project**.
 
 The objective is not just to implement a CPU in Verilog, but to understand the fundamentals of Computer Organisation & Architecture (COA) — memory organisation, register types, control logic, and the fetch-decode-execute cycle — through practical implementation.
 
 ## 2. Design Methodology
 
-The CPU was developed using a bottom-up modular approach, where individual components such as the Register File, Main Memory, Program Counter, Instruction Register, and Control Unit were first designed and verified independently. The previously developed `4-bit ALU` was reused and integrated into the processor. After validating the individual modules through simulation, they were integrated within the top-level `CPU_TOP` module to form the complete processor.
+The CPU was developed using **a bottom-up modular approach**, where individual components such as the Register File, Main Memory, Program Counter, Instruction Register, and Control Unit were first designed and verified independently. The previously developed `4-bit ALU` was reused and integrated into the processor. After validating the individual modules through simulation, they were integrated within the top-level `CPU_TOP` module to form the complete processor.
 
-The processor follows the Von Neumann architecture, where instructions and data share a unified memory space. A multi-cycle execution model was adopted to divide instruction execution into separate `FETCH`, `DECODE`, `EXECUTE`, and `WRITEBACK` stages. This approach simplifies the control logic, allows each stage to be observed independently, and provides a clearer understanding of datapath and control path interactions.
+The processor follows the **Von Neumann architecture**, where instructions and data share a unified memory space. **A multi-cycle execution model** was adopted to divide instruction execution into separate `FETCH`, `DECODE`, `EXECUTE`, and `WRITEBACK` stages. This approach simplifies the control logic, allows each stage to be observed independently, and provides a better understanding of datapath and control path interactions.
 
 ## 3. Individual Module Design
 Each module was independently designed, implemented, and verified through simulation before integration into the top-level CPU. The following sections describe the purpose, operation, and design decisions behind each module.
@@ -67,11 +67,11 @@ IR stores the fetched instruction temporarily so that it can be decoded and exec
 
 ### 3.5 Control Unit (CU)
 
-> The Control Unit plays a central role in the operation of the processor and is therefore discussed separately in the following section.
+> The Control Unit plays a central role in the operation of the processor and is therefore discussed separately in the Section 4.
 
 ### 3.6 CPU's ALU
 #### Purpose
-The ALU perfroms the combinational operations of the CPU. 
+The ALU performs the combinational operations of the CPU. 
 
 #### Operation
 - The 4-bit ALU operations are self-explanatory as they follow the ISA provided in section 5.
@@ -81,7 +81,7 @@ The ALU perfroms the combinational operations of the CPU.
 
 #### Design Decisions
 - The hierarchical design was chosen to reuse the previously built [4-bit ALU](https://github.com/theYash856/4_bit_ALU).
-- In order to maintain the originality of the exisitng project, a new top module `CPU_ALU` was used instead of the previous project's `ALU_TOP`.
+- In order to maintain the originality of the existing project, a new top module `CPU_ALU` was used instead of the previous project's `ALU_TOP`.
 - Opcode translation was performed to match the CPU instruction opcodes with the existing ALU opcodes.
 - An `alu_enable` signal is used to ensure that the ALU remains active only during the EXECUTE and WRITEBACK stages of ALU instructions.
 
@@ -97,12 +97,11 @@ This is the module where the individual modules come together to make a function
 
 ## 4. Control Unit (CU) Design
 ### 4.1 Purpose
-It is the brain of the CPU and is responsible for all control decisions. The CPU follows a multi-cycle execution model:
+The Control Unit acts as the brain of the CPU by generating the control signals required to coordinate instruction execution. The CPU follows a multi-cycle execution model:
 
 `FETCH` → `DECODE` → `EXECUTE` → `WRITEBACK` → `FETCH`
 
 ### 4.2 Operation
-The Control Unit governs the operations of the processor by generating the control signals required during each stage of instruction execution.
 
 **4.2.1. FETCH State**
 - Fetches the next instruction from memory and loads it into the Instruction Register.
@@ -114,6 +113,7 @@ The Control Unit governs the operations of the processor by generating the contr
 - No control signals are asserted during this stage, as instruction decoding is performed internally.
 
 **4.2.3. EXECUTE State**
+
 The instruction performed depends on the `opcode`:
 
 - ALU instructions enable the ALU and pass the `opcode` as `alu_op`.
@@ -121,6 +121,7 @@ The instruction performed depends on the `opcode`:
 - JUMP instructions activate the `jump_enable` signal.
 
 **4.2.4. WRITEBACK State**
+
 Similar to the `EXECUTE` state, the `opcode` determines the operation:
 
 - ALU instructions write the ALU result back to the register file using `reg_write`, while `alu_enable` remains asserted during the writeback cycle.
@@ -135,10 +136,10 @@ Similar to the `EXECUTE` state, the `opcode` determines the operation:
 - Signals such as `alu_enable`, `mem_read`, and `mem_write` are held active through WRITEBACK rather than only EXECUTE, since downstream modules (Register File, Memory) require valid data during the writeback cycle.
 - Since the CPU reuses the previously designed 4-bit ALU, opcodes `0000–1011` are reserved for ALU operations, allowing the opcode itself to be directly used as the `alu_op` signal.
 
-## 5 Debugging Experience
+## 5. Debugging Experience
 
 Some design issues were encountered during module integration and system-level testing. Resolving these issues improved the overall functionality and reliability of the CPU.
-- Discovered that the LOAD instruction was initially *treating the immediate field as data rather than a memory address*. This issue was resolved by introducing a memory address multiplexer to select between the Program Counter and the instruction address field.
+ - Discovered that the LOAD instruction was initially *treating the memory address as data* rather than using it to fetch the value stored at that location. This issue was resolved by introducing a memory address multiplexer to select between the Program Counter and the instruction address field.
 
 - Identified *a control logic issue* where the HALT instruction was not stopping the processor correctly. The problem was traced to the WRITEBACK stage logic and was resolved by properly asserting the halt signal during the final state.
 
