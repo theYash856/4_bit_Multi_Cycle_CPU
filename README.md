@@ -1,7 +1,8 @@
 # 4-bit Multi-Cycle CPU
+![Mark I](https://img.shields.io/badge/Mark%20I-blue)
 
 ## 1. Project Overview
-This project presents the design and implementation of a **4-bit multi-cycle CPU** using Verilog HDL. The CPU is based on the **Von Neumann architecture** and supports a custom **16-instruction ISA**. Each instruction is executed over **multiple clock cycles** through the FETCH, DECODE, EXECUTE, and WRITEBACK stages while supporting arithmetic, logical, memory, and control operations.
+This project presents the design and implementation of a **4-bit multi-cycle CPU** using Verilog HDL. The CPU is based on the **Von Neumann architecture** and supports a custom **16-instruction ISA**. Each instruction is executed over **multiple clock cycles** through the FETCH, DECODE, EXECUTE, and WRITEBACK stages, supporting arithmetic, logical, memory, and control operations.
 
 ## 2. Project Structure
 
@@ -114,7 +115,7 @@ This section presents the design planning done before implementation. The instru
 
 ***CPU Working Principle***
 
-The Program Counter provides the memory address during instruction FETCH, which is accessed from the Main Memory and loaded into the Instruction Register. The Control Unit decodes the instruction and generates the required control signals. Depending on the instruction, data moves between the Register File, ALU, and Main Memory, while the WRITEBACK stage writes the selected result back into the Register File.
+The Program Counter provides the memory address during instruction FETCH, which is accessed from the Main Memory and loaded into the Instruction Register. The Control Unit decodes the instruction and generates the required control signals. Depending on the decoded instruction, data flows between the Register File, ALU, and Main Memory. During the WRITEBACK stage, the selected result is written back to the Register File.
 
 ## 6. Technical Documentation
 > [!NOTE]
@@ -268,7 +269,7 @@ Memory[14] = 0000_0000_0101 (5)
 > All testbenches generate VCD waveform files using `$dumpfile` and `$dumpvars`, allowing the design to be simulated on online EDA platforms and viewed using external waveform viewers.
 
 ## 11. Key Learnings
-- Developed a practical understanding of Computer Architecture, particularly the datapath and control path of CPU.
+- Developed a practical understanding of Computer Organisation and Architecture (COA), particularly the interaction between the datapath and control path of a processor.
 - Used a multi-cycle FSM design to clearly observe the working of each state and its corresponding control signals.
 - Understood the working of shared instruction and data memory in the Von Neumann Architecture.
 - Gained experience in integrating previously developed hardware modules, such as the 4-bit ALU, into a larger processor system.
